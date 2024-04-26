@@ -1,0 +1,15 @@
+version: "3.7"
+
+networks:
+  docker.network:
+    driver: bridge
+
+services:
+  app:
+    build: .
+    container_name: docker.php
+    tty: true
+    networks:
+      - docker.network
+    volumes:
+      - .:/usr/src/cleaning_company
