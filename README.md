@@ -1,4 +1,4 @@
-## General notes
+## General Notes
 
 This is an application that generates schedule for a cleaning company in the form of a CSV file. I've tried to abide to the general rules 
 given in the task. So, we have 3 cleaning activities: Vacuuming, Window cleaning and Refrigerator cleaning.
