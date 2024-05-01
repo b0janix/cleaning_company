@@ -76,7 +76,7 @@ constructor of the command. The service class is responsible for the creation of
 from the command. I think I wrote enough comments in the service class that are explaining the logic there.
 
 I also wrote some tests with the help of the PHPUnit library. I have integration tests (tests/integration) with which I'm testing the command,
-and I have unit tests (tests/unit) with which I'm testing the CSVData.php class. I think I have 33 test cases in total.
+and I have unit tests (tests/unit) with which I'm testing the CSVData.php class. I think I have 30 test cases in total.
 Before you try to run the tests please paste this content into the .env.test file
 
 ``
