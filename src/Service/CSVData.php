@@ -4,89 +4,113 @@ namespace App\Service;
 
 use App\Enums\ActivityDurationEnum;
 use App\Enums\ActivityEnum;
+use App\Enums\DaysOfTheWeekEnum;
 use App\Enums\VacuumingDaysEnum;
+use DateTime;
 use DateTimeInterface;
 
 class CSVData
 {
     /**
      * @param int $minutes - cumulative amount of minutes
-     * @param DateTimeInterface $last - the last day of the period
-     * @param DateTimeInterface $date - the current day of the period
+     * @param array{
+     *     lastDate: string,
+     *     currentDate: DateTimeInterface,
+     *     firstVacuumingDate: string,
+     *     lastWorkingDate: string,
+     *     holidays: array<string>} $dates
      * @return array{date:string, activity:string, time: string}
      *
      * A method that contains the business logic for generating rows for a schedule into a CSV file
-     * Its being called in a foreach loop in the tests/integration/GenerateCleaningScheduleCommandTest.php command
+     * Its being called in a foreach loop in the src/Command/GenerateCleaningScheduleCommand.php command
      */
-    public function generateCSVRowData(int &$minutes, DateTimeInterface $last, DateTimeInterface $date): array
+    public function generateCSVRowData(int &$minutes, array $dates): array
     {
         $row = [];
-        $row['date'] = $date->format('Y-m-d');
+        $date = $dates['currentDate'];
+        $dateString = $date->format('Y-m-d');
 
-        //if the current day is the first day of the month
-        if ($date->format('d') === '01') {
-            $this->fillARow(
-                $row,
-                $minutes,
-                $this->generateRowValues(
-                    ActivityEnum::WINDOW_CLEANING,
-                    ActivityDurationEnum::WINDOW_CLEANING_DURATION
-                )
-            );
+        $row['date'] = $dateString;
+        $row['activity'] = '/';
 
-            //if the first day of the month is Tuesday or Thursday
+        //If the current day is holiday, skip the generation of row values and go with the defaults
+        if (!in_array($dateString, $dates['holidays'])) {
+
+            //If the current date is Tuesday or Thursday it's vacuuming day
             if ($date->format('D') === VacuumingDaysEnum::VACUUMING_DAY_ONE->value || $date->format('D') === VacuumingDaysEnum::VACUUMING_DAY_TWO->value) {
+
                 $this->fillARow(
                     $row,
                     $minutes,
                     $this->generateRowValues(
                         ActivityEnum::VACUUMING,
                         ActivityDurationEnum::VACUUMING_DURATION,
-                        true
                     )
                 );
+
+                //We are doing REFRIGERATOR_CLEANING on the first vacuuming day of the month, so we are checking for that day
+                if ($dates['firstVacuumingDate'] === $date->format('Y-m-d')) {
+                    $this->fillARow(
+                        $row,
+                        $minutes,
+                        $this->generateRowValues(
+                            ActivityEnum::REFRIGERATOR_CLEANING,
+                            ActivityDurationEnum::REFRIGERATOR_CLEANING_DURATION,
+                            true
+                        )
+                    );
+                }
             }
 
-            //if the current day is the last day of the month
-        } elseif ($date->format('t') === $date->format('d')) {
-            $this->fillARow(
-                $row,
-                $minutes,
-                $this->generateRowValues(
-                    ActivityEnum::REFRIGERATOR_CLEANING,
-                    ActivityDurationEnum::REFRIGERATOR_CLEANING_DURATION
-                )
-            );
-
-            //if the last day of the month is Tuesday or Thursday
-            if ($date->format('D') === VacuumingDaysEnum::VACUUMING_DAY_ONE->value || $date->format('D') === VacuumingDaysEnum::VACUUMING_DAY_TWO->value) {
+            //We are doing WINDOW_CLEANING on the last working day of the month, so we are checking for that day
+            if ($dates['lastWorkingDate'] === $date->format('Y-m-d')) {
                 $this->fillARow(
                     $row,
                     $minutes,
                     $this->generateRowValues(
-                        ActivityEnum::VACUUMING,
-                        ActivityDurationEnum::VACUUMING_DURATION,
-                        true
+                        ActivityEnum::WINDOW_CLEANING,
+                        ActivityDurationEnum::WINDOW_CLEANING_DURATION,
+                        $row['activity'] !== '/'
                     )
                 );
             }
-
-        } elseif ($date->format('D') === VacuumingDaysEnum::VACUUMING_DAY_ONE->value || $date->format('D') === VacuumingDaysEnum::VACUUMING_DAY_TWO->value) {
-            $this->fillARow(
-                $row,
-                $minutes,
-                $this->generateRowValues(
-                    ActivityEnum::VACUUMING,
-                    ActivityDurationEnum::VACUUMING_DURATION,
-                )
-            );
-        } else {
-            $row['activity'] = '/';
         }
 
-        $row['time'] = $this->calculateHoursForSpecificDay($date, $last, $minutes);
+        //For each current day or date we are checking whether it is the last day of the period
+        //If it is we need to display the total time otherwise just add '/' for TotalTime
+        $row['time'] = $this->calculateHoursForSpecificDay($date, $dates['lastDate'], $minutes);
 
         return $row;
+    }
+
+    /**
+     * @param DateTime $dateTime
+     * @return string
+     *
+     * We are returning the first vacuuming date of the month, and we are passing the first day of the month
+     */
+    public function determineTheFirstVacuumingDate(DateTime $dateTime): string
+    {
+        $dayOfTheWeek = (int) $dateTime->format('N');
+
+        $dayOfTheWeek = DaysOfTheWeekEnum::tryFrom($dayOfTheWeek);
+
+        return $dayOfTheWeek ? $dayOfTheWeek->firstVacuumingDay($dateTime)->format('Y-m-d') : '';
+    }
+
+    /**
+     * @param DateTime $dateTime
+     * @return string
+     *
+     * We are returning the last working date of the month, and we are passing the last day of the month
+     */
+    public function determineTheLastWorkingDate(DateTime $dateTime): string
+    {
+        $dayOfTheWeek = (int) $dateTime->format('N');
+
+        $dayOfTheWeek = DaysOfTheWeekEnum::tryFrom($dayOfTheWeek);
+
+        return $dayOfTheWeek ? $dayOfTheWeek->lastWorkingDay($dateTime)->format('Y-m-d') : '';
     }
 
     /**
@@ -95,16 +119,16 @@ class CSVData
      * @param array{minutes: int, activity: string} $values
      * @return void
      *
-     * If the activity key in the row array is already existing
-     * Append the string, don't assign it
-     * And at the end add the minutes to the amount at that point or that day of the period
+     * If the activity key in the row array is equal to '/'
+     * Replace it with a real activity string value
+     * Otherwise just append it to the string list of activities
      */
     public function fillARow(array &$row, int &$minutes, array $values): void
     {
-        if (array_key_exists('activity', $row)) {
-            $row['activity'] .=  $values['activity'];
-        } else {
+        if ($row['activity'] === '/') {
             $row['activity'] =  $values['activity'];
+        } else {
+            $row['activity'] .=  $values['activity'];
         }
 
         $minutes += $values['minutes'];
@@ -116,8 +140,7 @@ class CSVData
      * @param bool $appended
      * @return array{minutes: int, activity: string}
      *
-     * For activity, it checks whether it should be appended
-     * It should be appended only if it's Tuesday or Thursday, and it's the first or the last day of the month
+     * If it should be appended, you need to add '&' in front of the activity string value
      */
     private function generateRowValues(
         ActivityEnum $activityEnum,
@@ -126,22 +149,22 @@ class CSVData
     ): array {
         return [
             'minutes'  => $activityDurationEnum->value,
-            'activity' => $appended ? '&' . $activityEnum->value : $activityEnum->value
+            'activity' => $appended ? ' & ' . $activityEnum->value : $activityEnum->value
         ];
     }
 
     /**
-     * @param DateTimeInterface $last
      * @param DateTimeInterface $current
+     * @param string $last
      * @param int $minutes
      * @return string
      *
      * This method checks whether the current day of the period is also the last day of the period
      * In order to calculate the total time, since we display the total time at the last day of the period
      */
-    private function calculateHoursForSpecificDay(DateTimeInterface $last, DateTimeInterface $current, int $minutes): string
+    private function calculateHoursForSpecificDay(DateTimeInterface $current, string $last, int $minutes): string
     {
-        return $last->format('Y-m-d') === $current->format('Y-m-d') ? $this->calculateHours($minutes) : '/';
+        return $last === $current->format('Y-m-d') ? $this->calculateHours($minutes) : '/';
     }
 
     /**

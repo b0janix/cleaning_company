@@ -6,6 +6,7 @@ use App\Enums\ActivityDurationEnum;
 use App\Enums\ActivityEnum;
 use App\Service\CSVData;
 use DateTime;
+use Exception;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 use ReflectionMethod;
@@ -13,99 +14,178 @@ use ReflectionMethod;
 class CSVDataTest extends TestCase
 {
     /**
-     * @return array<array{lastDay: DateTime, currentDay: DateTime, result: array{date:string, activity:string, time:string}}>
+     * @return array{array{
+     *     dates: array{
+     *          lastDate: string,
+     *          currentDate: DateTime,
+     *          firstVacuumingDate: string,
+     *          lastWorkingDate: string,
+     *          holidays: array{}
+     *     },
+     *     result: array{
+     *          date: string,
+     *          activity: string,
+     *          time: string
+     *     }
+     * }}
      */
     public function provideDataForGenerateCSVRow(): array
     {
         return [
             [
-                'lastDay' => (new DateTime('2024-07-31')),
-                'currentDay' => (new DateTime('2024-04-01')),
+                'dates' => [
+                    'lastDate'           => '2024-08-01',
+                    'currentDate'        => (new DateTime('2024-05-01')),
+                    'firstVacuumingDate' => '2024-05-02',
+                    'lastWorkingDate'    => '2024-05-31',
+                    'holidays'           => []
+                ],
                 'result' => [
-                    "date" => "2024-04-01",
-                    "activity" => "Window cleaning",
+                    "date" => "2024-05-01",
+                    "activity" => "/",
                     "time" => "/"
-                ]
+                ],
             ],
             [
-                'lastDay' => (new DateTime('2024-07-31')),
-                'currentDay' =>  (new DateTime('2024-04-25')),
-                'result' => [
-                    "date" => "2024-04-25",
-                    "activity" => "Vacuuming",
-                    "time" => "/"
-                ]
-            ],
-            [
-                'lastDay' => (new DateTime('2024-07-31')),
-                'currentDay' =>  (new DateTime('2024-05-31')),
-                'result' => [
-                    "date" => "2024-05-31",
-                    "activity" => "Refrigerator cleaning",
-                    "time" => "/"
-                ]
-            ],
-            [
-                'lastDay' => (new DateTime('2024-07-31')),
-                'currentDay' =>  (new DateTime('2024-04-30')),
+                'dates' => [
+                    'lastDate'           => '2024-07-31',
+                    'currentDate'        => (new DateTime('2024-04-30')),
+                    'firstVacuumingDate' => '2024-04-02',
+                    'lastWorkingDate'    => '2024-04-30',
+                    'holidays'           => []
+                ],
                 'result' => [
                     "date" => "2024-04-30",
-                    "activity" => "Refrigerator cleaning&Vacuuming",
+                    "activity" => "Vacuuming & Window cleaning",
                     "time" => "/"
-                ]
+                ],
             ],
             [
-                'lastDay' => (new DateTime('2024-09-28')),
-                'currentDay' =>  (new DateTime('2024-08-01')),
+                'dates' => [
+                    'lastDate'           => '2024-08-01',
+                    'currentDate'        => (new DateTime('2024-05-02')),
+                    'firstVacuumingDate' => '2024-05-02',
+                    'lastWorkingDate'    => '2024-05-31',
+                    'holidays'           => []
+                ],
                 'result' => [
-                    "date" => "2024-08-01",
-                    "activity" => "Window cleaning&Vacuuming",
+                    "date" => "2024-05-02",
+                    "activity" => "Vacuuming & Refrigerator cleaning",
                     "time" => "/"
-                ]
+                ],
             ],
             [
-                'lastDay' => (new DateTime('2024-07-31')),
-                'currentDay' => (new DateTime('2024-04-24')),
+                'dates' => [
+                    'lastDate'           => '2024-08-01',
+                    'currentDate'        => (new DateTime('2024-06-04')),
+                    'firstVacuumingDate' => '2024-06-04',
+                    'lastWorkingDate'    => '2024-06-28',
+                    'holidays'           => []
+                ],
                 'result' => [
-                    "date" => "2024-04-24",
+                    "date" => "2024-06-04",
+                    "activity" => "Vacuuming & Refrigerator cleaning",
+                    "time" => "/"
+                ],
+            ],
+            [
+                'dates' => [
+                    'lastDate'           => '2024-08-01',
+                    'currentDate'        => (new DateTime('2024-05-02')),
+                    'firstVacuumingDate' => '2024-05-02',
+                    'lastWorkingDate'    => '2024-05-31',
+                    'holidays'           => []
+                ],
+                'result' => [
+                    "date" => "2024-05-02",
+                    "activity" => "Vacuuming & Refrigerator cleaning",
+                    "time" => "/"
+                ],
+            ],
+            [
+                'dates' => [
+                    'lastDate'           => '2024-08-07',
+                    'currentDate'        => (new DateTime('2024-05-07')),
+                    'firstVacuumingDate' => '2024-05-02',
+                    'lastWorkingDate'    => '2024-05-31',
+                    'holidays'           => []
+                ],
+                'result' => [
+                    "date" => "2024-05-07",
+                    "activity" => "Vacuuming",
+                    "time" => "/"
+                ],
+            ],
+            [
+                'dates' => [
+                    'lastDate'           => '2024-08-31',
+                    'currentDate'        => (new DateTime('2024-05-31')),
+                    'firstVacuumingDate' => '2024-05-02',
+                    'lastWorkingDate'    => '2024-05-31',
+                    'holidays'           => []
+                ],
+                'result' => [
+                    "date" => "2024-05-31",
+                    "activity" => "Window cleaning",
+                    "time" => "/"
+                ],
+            ],
+            [
+                'dates' => [
+                    'lastDate'           => '2024-08-31',
+                    'currentDate'        => (new DateTime('2024-05-31')),
+                    'firstVacuumingDate' => '2024-05-02',
+                    'lastWorkingDate'    => '2024-05-31',
+                    'holidays'           => ['2024-05-31']
+                ],
+                'result' => [
+                    "date" => "2024-05-31",
                     "activity" => "/",
                     "time" => "/"
-                ]
+                ],
             ],
             [
-                'lastDay' => (new DateTime('2024-07-31')),
-                'currentDay' => (new DateTime('2024-07-31')),
+                'dates' => [
+                    'lastDate'           => '2024-08-31',
+                    'currentDate'        => (new DateTime('2024-08-31')),
+                    'firstVacuumingDate' => '2024-05-02',
+                    'lastWorkingDate'    => '2024-05-31',
+                    'holidays'           => []
+                ],
                 'result' => [
-                    "date" => "2024-07-31",
-                    "activity" => "Refrigerator cleaning",
-                    "time" => "00:50"
-                ]
-            ],
-            [
-                'lastDay' => (new DateTime('2024-08-05')),
-                'currentDay' => (new DateTime('2024-08-05')),
-                'result' => [
-                    "date" => "2024-08-05",
+                    "date" => "2024-08-31",
                     "activity" => "/",
                     "time" => "00:00"
-                ]
+                ],
             ],
         ];
     }
 
+
     /**
-     * @param DateTime $lastDay
-     * @param DateTime $currentDay
-     * @param array<array{lastDay: DateTime, currentDay: DateTime, result: array{date:string, activity:string, time:string}}> $result
+     * @param array{
+     *           lastDate: string,
+     *           currentDate: DateTime,
+     *           firstVacuumingDate: string,
+     *           lastWorkingDate: string,
+     *           holidays: array{}
+     *      }  $dates
+     * @param array{
+     *           date: string,
+     *           activity: string,
+     *           time: string
+     *      } $result
+     * @return void
+     *
      * @dataProvider provideDataForGenerateCSVRow
      */
-    public function testGenerateCSVRow(DateTime $lastDay, DateTime $currentDay, array $result): void
+    public function testGenerateCSVRow(array $dates, array $result): void
     {
         $csvData = new CSVData();
 
         $minutes = 0;
 
-        $data = $csvData->generateCSVRowData($minutes, $lastDay, $currentDay);
+        $data = $csvData->generateCSVRowData($minutes, $dates);
 
         $this->assertArrayHasKey('date', $data);
         $this->assertArrayHasKey('activity', $data);
@@ -124,7 +204,7 @@ class CSVDataTest extends TestCase
 
         $csvData = new CSVData();
 
-        $res = $refMethod->invoke($csvData, (new DateTime('2024-07-31')), (new DateTime('2024-07-31')), 600);
+        $res = $refMethod->invoke($csvData, (new DateTime('2024-07-31')), '2024-07-31', 600);
 
         $this->assertEquals('10:00', $res);
     }
@@ -139,7 +219,7 @@ class CSVDataTest extends TestCase
 
         $csvData = new CSVData();
 
-        $res = $refMethod->invoke($csvData, (new DateTime('2024-07-31')), (new DateTime('2024-04-01')), 600);
+        $res = $refMethod->invoke($csvData, (new DateTime('2024-04-01')), '2024-07-31', 600);
 
         $this->assertEquals('/', $res);
     }
@@ -165,16 +245,16 @@ class CSVDataTest extends TestCase
     public function provideDataForGenerateRowValues(): array
     {
         return [
-          [
-              'activityEnum' => ActivityEnum::WINDOW_CLEANING,
-              'activityDurationEnum' => ActivityDurationEnum::WINDOW_CLEANING_DURATION,
-              'appended' => false
-          ],
-          [
-              'activityEnum' => ActivityEnum::VACUUMING,
-              'activityDurationEnum' => ActivityDurationEnum::VACUUMING_DURATION,
-              'appended' => true
-          ]
+            [
+                'activityEnum' => ActivityEnum::VACUUMING,
+                'activityDurationEnum' => ActivityDurationEnum::VACUUMING_DURATION,
+                'appended' => false
+            ],
+            [
+                'activityEnum' => ActivityEnum::REFRIGERATOR_CLEANING,
+                'activityDurationEnum' => ActivityDurationEnum::REFRIGERATOR_CLEANING_DURATION,
+                'appended' => true
+            ]
         ];
     }
 
@@ -193,7 +273,7 @@ class CSVDataTest extends TestCase
 
         $this->assertEquals([
             'minutes'  => $activityDurationEnum->value,
-            'activity' => $appended ? '&' . $activityEnum->value : $activityEnum->value
+            'activity' => $appended ? ' & ' . $activityEnum->value : $activityEnum->value
         ], $res);
     }
 
@@ -204,7 +284,7 @@ class CSVDataTest extends TestCase
     {
         return [
             [
-                'row' => [],
+                'row' => ['activity' => '/'],
                 'minutes' => 0,
                 'values' => [
                     'activity' => ActivityEnum::WINDOW_CLEANING->value,
@@ -219,11 +299,11 @@ class CSVDataTest extends TestCase
                 'row' => ['activity' => ActivityEnum::REFRIGERATOR_CLEANING->value],
                 'minutes' => 50,
                 'values' => [
-                    'activity' => '&' . ActivityEnum::VACUUMING->value,
+                    'activity' => ' & ' . ActivityEnum::VACUUMING->value,
                     'minutes' => ActivityDurationEnum::VACUUMING_DURATION->value,
                 ],
                 'result' => [
-                    'activity' => ActivityEnum::REFRIGERATOR_CLEANING->value . '&' . ActivityEnum::VACUUMING->value,
+                    'activity' => ActivityEnum::REFRIGERATOR_CLEANING->value . ' & ' . ActivityEnum::VACUUMING->value,
                     'minutes' => ActivityDurationEnum::REFRIGERATOR_CLEANING_DURATION->value + ActivityDurationEnum::VACUUMING_DURATION->value,
                 ]
             ]
@@ -245,5 +325,102 @@ class CSVDataTest extends TestCase
 
         $this->assertEquals($result['activity'], $row['activity']);
         $this->assertEquals($result['minutes'], $minutes);
+    }
+
+    /**
+     * @return array{array{inputDate: string, resultDate: string}}
+     */
+    public function provideForFirstVacuumingDate(): array
+    {
+        return [
+            [
+                'inputDate' => '2024-05-01',
+                'resultDate' => '2024-05-02'
+            ],
+            [
+                'inputDate' => '2024-05-02',
+                'resultDate' => '2024-05-02'
+            ],
+            [
+                'inputDate' => '2024-05-03',
+                'resultDate' => '2024-05-07'
+            ],
+            [
+                'inputDate' => '2024-05-04',
+                'resultDate' => '2024-05-07'
+            ],
+            [
+                'inputDate' => '2024-05-05',
+                'resultDate' => '2024-05-07'
+            ],
+            [
+                'inputDate' => '2024-05-06',
+                'resultDate' => '2024-05-07'
+            ],
+            [
+                'inputDate' => '2024-05-07',
+                'resultDate' => '2024-05-07'
+            ],
+        ];
+    }
+
+
+    /**
+     * @param string $inputDate
+     * @param string $resultDate
+     * @return void
+     *
+     * @dataProvider provideForFirstVacuumingDate
+     * @throws Exception
+     */
+    public function testFirstVacuumingDate(string $inputDate, string $resultDate): void
+    {
+        $csvData = new CSVData();
+
+        $res = $csvData->determineTheFirstVacuumingDate((new DateTime($inputDate)));
+
+        $this->assertEquals($resultDate, $res);
+    }
+
+    /**
+     * @return array{array{inputDate: string, resultDate: string}}
+     */
+    public function provideForLastWorkingDate(): array
+    {
+        return [
+            [
+                'inputDate' => '2024-06-30',
+                'resultDate' => '2024-06-28'
+            ],
+            [
+                'inputDate' => '2024-06-29',
+                'resultDate' => '2024-06-28'
+            ],
+            [
+                'inputDate' => '2024-06-28',
+                'resultDate' => '2024-06-28'
+            ],
+            [
+                'inputDate' => '2024-06-27',
+                'resultDate' => '2024-06-27'
+            ],
+        ];
+    }
+
+    /**
+     * @param string $inputDate
+     * @param string $resultDate
+     * @return void
+     *
+     * @dataProvider provideForLastWorkingDate
+     * @throws Exception
+     */
+    public function testLastWorkingDate(string $inputDate, string $resultDate): void
+    {
+        $csvData = new CSVData();
+
+        $res = $csvData->determineTheLastWorkingDate((new DateTime($inputDate)));
+
+        $this->assertEquals($resultDate, $res);
     }
 }

@@ -3,12 +3,15 @@
 This is an application that generates schedule for a cleaning company in the form of a CSV file. I've tried to abide to the general rules 
 given in the task. So, we have 3 cleaning activities: Vacuuming, Window cleaning and Refrigerator cleaning.
 Each of those activities takes certain amount of time: 21 min, 35 min, 50 min in the given order. Vacuuming is done 
-on Tuesdays and Thursdays. While Window cleaning and Refrigerator cleaning is done on the first and the last day of the month.
+on Tuesdays and Thursdays. While Window cleaning and Refrigerator cleaning is done on the last working day and the first cleaning day of the month.
 On those dates I'm doing inserts for the respected activities in the Activity column.
 I have three columns in the CSV file: Date, Activity and TotalTime. When I don't have a specific value for a certain date
 I replace the value with a forward slash ('/'). I'm calculating the total time in the HH::MM format, 
 so that value is inserted in the TotalTime column in the last row of the csv file or for the last day of the 3 month period.
-The 3 month period starts from the current day or from today and goes 3 months into the future.
+The 3 month period starts from the day or the date given to the command and goes 3 months into the future. If we don't provide
+the startDate (it's not a required arg) or you provide an invalid startDate, the first day or the first date will default to the current day or to today. 
+I've also enabled the user to provide an array of holidays to the command, so for those days we won't do any activities 
+even though the days are not Saturday or Sunday. If you provide invalid holiday dates the command will fail.
 
 ## Technical Specifications
 
@@ -58,6 +61,14 @@ and after the execution hopefully you will see this line of text
 
 ``Your schedule for the next three months has been created.``
 
+If you want to provide some arguments, which by the way are not required, you can execute this command
+
+``bin/console generate:schedule 2024-05-01 2024-05-31``
+
+So the first argument is the startDate, and it should be passed in the format 'Y-m-d'. The second argument is holidays, it
+is an argument of type array, so we can pass multiple dates. If we don't pass any dates, we are going to send an empty array
+as an argument. The dates within the array should be in the format 'Y-m-d' as well.
+
 and you should have .csv file within the src/files directory.
 
 So for the code I have one command ``GenerateCleaningScheduleCommand.php`` and one service class ``CSVData.php`` which I inject in the
@@ -65,7 +76,7 @@ constructor of the command. The service class is responsible for the creation of
 from the command. I think I wrote enough comments in the service class that are explaining the logic there.
 
 I also wrote some tests with the help of the PHPUnit library. I have integration tests (tests/integration) with which I'm testing the command,
-and I have unit tests (tests/unit) with which I'm testing the CSVData.php class. I think I have 17 test cases in total.
+and I have unit tests (tests/unit) with which I'm testing the CSVData.php class. I think I have 33 test cases in total.
 Before you try to run the tests please paste this content into the .env.test file
 
 ``
