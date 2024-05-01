@@ -33,7 +33,7 @@ class CSVData
         $row['date'] = $dateString;
         $row['activity'] = '/';
 
-        //If the current day is holiday, skip the generation of row values and go with the defaults
+        //If the current day is a holiday, skip the generation of row values and go with the defaults
         if (!in_array($dateString, $dates['holidays'])) {
 
             //If the current date is Tuesday or Thursday it's vacuuming day
@@ -77,7 +77,7 @@ class CSVData
         }
 
         //For each current day or date we are checking whether it is the last day of the period
-        //If it is we need to display the total time otherwise just add '/' for TotalTime
+        //If it is we need to display the total time otherwise just add '/' in TotalTime for that day
         $row['time'] = $this->calculateHoursForSpecificDay($date, $dates['lastDate'], $minutes);
 
         return $row;

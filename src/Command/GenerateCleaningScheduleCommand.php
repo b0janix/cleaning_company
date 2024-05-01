@@ -64,7 +64,7 @@ class GenerateCleaningScheduleCommand extends Command
             $startDate = is_string($input->getArgument('startDate')) ? $input->getArgument('startDate') : '';
 
             if (!$startDate || !$now = DateTime::createFromFormat('Y-m-d', $startDate)) {
-                $io->writeln('You haven\'t provide a valid startDate. We will take the current date as a start date.');
+                $io->writeln('You haven\'t provided a valid startDate. We will take the current date as a start date.');
                 $now = new DateTimeImmutable();
             } else {
                 $now = new DateTimeImmutable($now->format('Y-m-d'));
@@ -79,7 +79,7 @@ class GenerateCleaningScheduleCommand extends Command
 
             if (!is_resource($fp)) {
 
-                throw new Exception('There are problems with creating the csv file.');
+                throw new Exception('There are problems with the creation of the csv file.');
 
             }
 
