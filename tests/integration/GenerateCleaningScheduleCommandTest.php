@@ -54,7 +54,7 @@ class GenerateCleaningScheduleCommandTest extends KernelTestCase
      *
      * @dataProvider provideForTextExecuteForArgumentsSet
      */
-    public function testExecuteForStartDateSet(string $startDate, array $holidays, string $time): void
+    public function testExecuteForArgumentsSet(string $startDate, array $holidays, string $time): void
     {
         $path = "tests/files/2024-05-01___2024-08-01___schedule.csv";
 
