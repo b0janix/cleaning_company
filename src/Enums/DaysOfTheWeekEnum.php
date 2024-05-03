@@ -9,7 +9,7 @@ enum DaysOfTheWeekEnum: int
     case MON = 1;
     case TUE = 2;
     case WED = 3;
-    case THI = 4;
+    case THU = 4;
     case FRI = 5;
     case SAT = 6;
     case SUN = 7;
@@ -20,13 +20,13 @@ enum DaysOfTheWeekEnum: int
      *
      * Here we are finding the first vacuuming day of the month
      * As we are passing the first day of the month.
-     * The first vacuuming day of the week to which belongs the first day of the month
-     * Will be the first vacuuming day of the month
+     * From Mon to Thu we are going to return the day from the same week
+     * From Fri to Sun we are going to return days from the next week
      */
     public function firstVacuumingDay(DateTime $dateTime): DateTime
     {
         return match ($this) {
-            self::TUE, self::THI => $dateTime,
+            self::TUE, self::THU => $dateTime,
             self::MON, self::WED => $dateTime->modify('+1 day'),
             self::FRI            => $dateTime->modify('+4 days'),
             self::SAT            => $dateTime->modify('+3 days'),
@@ -44,7 +44,7 @@ enum DaysOfTheWeekEnum: int
     public function lastWorkingDay(DateTime $dateTime): DateTime
     {
         return match ($this) {
-            self::MON, self::TUE, self::WED, self::THI, self::FRI => $dateTime,
+            self::MON, self::TUE, self::WED, self::THU, self::FRI => $dateTime,
             self::SAT            => $dateTime->modify('-1 day'),
             self::SUN            => $dateTime->modify('-2 days')
         };
